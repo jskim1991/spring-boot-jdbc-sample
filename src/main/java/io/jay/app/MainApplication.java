@@ -4,9 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,12 +17,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
+interface CustomerRepository extends CrudRepository<Customer, String> {
+    Optional<Customer> findByName(String name);
+}
 
 @SpringBootApplication
 public class MainApplication {
@@ -30,7 +36,23 @@ public class MainApplication {
     }
 }
 
-record Customer (@Id String id, String name, int orderCount, ZonedDateTime memberSince, ZonedDateTime lastPurchased, @Version int version) {
+record Customer(
+        @Id String customerId,
+        String name,
+        ZonedDateTime memberSince,
+        ZonedDateTime lastPurchased,
+        @MappedCollection(idColumn = "CUSTOMER_ID") Set<Order> orders,
+        @Version int version
+) {
+}
+
+@Table("ORDERS")
+record Order(
+        @Id String orderId,
+        int total,
+        ZonedDateTime purchasedDate,
+        @Version int version
+) {
 }
 
 @Controller
@@ -55,15 +77,20 @@ class CustomerController {
     }
 
     @PostMapping
-    public String create(@RequestBody NewCustomerRequest customer) {
-        Customer saved = repository.save(new Customer(UUID.randomUUID().toString(), customer.name(), 0, ZonedDateTime.now(), null, 0));
-        return saved.id();
+    public String addCustomer(@RequestBody NewCustomerRequest customer) {
+        Customer saved = repository.save(new Customer(UUID.randomUUID().toString(), customer.name(), ZonedDateTime.now(), null, new HashSet<>(), 0));
+        return saved.customerId();
     }
 
     @PatchMapping("/{name}")
-    public Customer purchase(@PathVariable String name) {
+    @Transactional
+    public Customer purchase(@PathVariable String name, @RequestBody NewOrderRequest orderRequest) {
         var customer = repository.findByName(name).orElseThrow(() -> new NoSuchElementException("No customer found with name: " + name));
-        customer = new Customer(customer.id(), customer.name(), customer.orderCount() + 1, customer.memberSince(), ZonedDateTime.now(), customer.version());
+
+        var order = new Order(UUID.randomUUID().toString(), orderRequest.total(), ZonedDateTime.now(), 0);
+        customer.orders().add(order);
+
+        customer = new Customer(customer.customerId(), customer.name(), customer.memberSince(), ZonedDateTime.now(), customer.orders(), customer.version());
         return repository.save(customer);
     }
 }
@@ -71,6 +98,5 @@ class CustomerController {
 record NewCustomerRequest(String name) {
 }
 
-interface CustomerRepository extends CrudRepository<Customer, String> {
-    Optional<Customer> findByName(String name);
+record NewOrderRequest(int total) {
 }

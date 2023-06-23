@@ -9,6 +9,7 @@
 - Load an entity = SQL statements get run. Completely loaded (no lazy loading or caching)
 - Save an entity = gets saved. No dirty checking and no sessions
 - Maybe only for simple table structures?
+- Supports 1:1 and 1:N relationships but not N:1 or N:M
 
 
 ### Entity State Detection Strategies
@@ -40,3 +41,7 @@ curl http://localhost:8080/customers | jq
 ```shell
 curl http://localhost:8080/customers/Jay | jq
 ```
+
+
+## Questions
+- Case sensitive for table names and column names?
