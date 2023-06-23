@@ -26,12 +26,14 @@
 ```shell
 curl -X POST http://localhost:8080/customers \
 -d '{"name": "Jay"}' \
--H 'Content-Type: Application/json' | jq
+-H 'Content-Type: Application/json'
 ```
 
 2. Update the customer
 ```shell
-curl -X PATCH http://localhost:8080/customers/Jay | jq
+curl -X PATCH http://localhost:8080/customers/Jay \
+-d '{"total": 199}' \
+-H 'Content-Type: Application/json' | jq
 ```
 
 3. Query customer
