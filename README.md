@@ -1,8 +1,27 @@
+## Domain Driven Design and Relational Databases
+
+All Spring Data modules are inspired by the concepts of “repository”, “aggregate”, and “aggregate root” from Domain Driven Design. 
+These are possibly even more important for Spring Data JDBC, because they are, to some extent, 
+contrary to normal practice when working with relational databases.
+
+An aggregate is a group of entities that is guaranteed to be consistent between atomic changes to it.
+
+Each aggregate has exactly one aggregate root, which is one of the entities of the aggregate. 
+The aggregate gets manipulated only through methods on that aggregate root. 
+These are the atomic changes mentioned earlier.
+
+A repository is an abstraction over a persistent store that looks like a collection of all the aggregates of a certain type. 
+For Spring Data in general, this means you want to have one `Repository` per aggregate root. 
+In addition, for Spring Data JDBC this means that all entities reachable from an aggregate root are considered to be part of that aggregate root. 
+Spring Data JDBC assumes that only the aggregate has a foreign key to a table storing non-root entities of the aggregate and no other entity points toward non-root entities.
+
+Reference: https://docs.spring.io/spring-data/jdbc/docs/current/reference/html/#jdbc.domain-driven-design
+
 ## JDBC vs JPA
 
 ### JPA: 
-- tracks changes to entities
-- does lazy loading for you
+- Tracks changes to entities
+- Does lazy loading for you
 - Difficult...
 
 ### JDBC:
@@ -47,3 +66,5 @@ curl http://localhost:8080/customers/Jay | jq
 
 ## Questions
 - Case sensitive for table names and column names?
+- How will be the performace compared to JPA?
+- 
